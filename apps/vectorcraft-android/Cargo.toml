@@ -1,0 +1,109 @@
+[package]
+name = "vectorcraft-android"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "VectorCraft on Android: the real engine and egui shell on winit's NativeActivity backend"
+publish = false
+
+# cargo-apk turns this cdylib into the APK's lib/arm64-v8a/libvectorcraft.so, and
+# the artifact name is what the injected `android.app.lib_name` meta-data points
+# at (with `-` → `_`). A mismatch yields an APK that installs and then dies on
+# launch, so the lib name is deliberate: the same shape `apps/photocraft-android`
+# uses.
+[lib]
+name = "vectorcraft"
+crate-type = ["cdylib"]
+
+[dependencies]
+vectorcraft-engine = { workspace = true }
+vectorcraft-ui-egui = { workspace = true }
+# Fonts: the shell registers Android's own font files and VectorCraft's Fonts folder
+# (`set_platform_font_files` / `set_app_font_dir`), which the desktop does in `prefs_dir`.
+vectorcraft-text = { workspace = true }
+egui = { workspace = true }
+log = { workspace = true }
+serde_json = { workspace = true }
+
+# `android-native-activity` is the whole reason this builds. Without it
+# `android-activity` is pulled with no backend at all and eframe fails with
+# `file not found for module activity_impl` plus `Either "game-activity" or
+# "native-activity" must be enabled as features` — a missing feature, not a code
+# problem.
+#
+# `accesskit` is deliberately absent, and that is the fix PhotoCraft needed too:
+# eframe 0.36 rejects the pair with
+# `compile_error!("`accesskit` feature is only available with
+# `android-game-activity`")` (eframe/src/lib.rs:153), because egui's accesskit
+# integration on Android goes through the GameActivity backend while this
+# packages NativeActivity. PhotoCraft's shell kept `crates/ui-egui` depending on
+# eframe, so it had to declare eframe twice — once plainly and once under
+# `cfg(not(target_os = "android"))` with accesskit. VectorCraft's `ui-egui` has no
+# eframe dependency at all (it renders through `egui` and its own CPU compositor),
+# so the trap cannot be reached from here: the only eframe in this crate's graph
+# is this line, and it never asks for accesskit.
+#
+# The android-* features are inert elsewhere (winit only binds android-activity
+# under cfg(target_os = "android")), so `cargo check --workspace` on the host is
+# unaffected.
+eframe = { workspace = true, features = ["default_fonts", "wgpu", "android-native-activity"] }
+# Needed to name `AndroidApp` for `NativeOptions::android_app`; eframe does not
+# re-export winit. Pinned to the exact version eframe/egui-winit build against.
+winit = { version = "=0.30.13", default-features = false, features = ["android-native-activity"] }
+
+[package.metadata.android]
+package = "ai.storyteller.vectorcraft"
+apk_name = "vectorcraft"
+build_targets = ["aarch64-linux-android"]
+strip = "strip"
+# Theme resources — the two edge-to-edge fixes live in res/values/styles.xml.
+resources = "res"
+
+[package.metadata.android.sdk]
+# 26 = Android 8.0: the floor for a modern Vulkan driver surface.
+min_sdk_version = 26
+target_sdk_version = 35
+
+[package.metadata.android.application]
+label = "VectorCraft"
+# Variant B (immersive fullscreen) is what fixed the menu bar sitting under the
+# notification bar on PhotoCraft's tablet; variant A is the alternative — see
+# res/values/styles.xml.
+theme = "@style/VectorcraftFullscreen"
+icon = "@mipmap/ic_launcher"
+# The engine mmaps documents and formats; keep the .so uncompressed so it can be
+# mapped from the APK directly.
+extract_native_libs = true
+
+# Rendering is a CPU compositor plus egui's wgpu present, so Vulkan is preferred
+# but not required.
+[[package.metadata.android.uses_feature]]
+name = "android.hardware.vulkan.level"
+required = false
+version = 1
+
+# Storage access for the in-app picker (src/file_picker.rs). Android 10+ forbids
+# reading shared storage by path, so the picker probes each root and only offers the
+# ones it can actually read — no permission is needed for the app's own folder, and
+# these just widen what is reachable.
+#
+# MANAGE_EXTERNAL_STORAGE ("All files access") cannot be requested at runtime: it is
+# granted by hand in Settings ▸ Apps ▸ VectorCraft ▸ Special access. Google Play
+# restricts it to file-manager-class apps, which does not apply to a sideloaded build.
+[[package.metadata.android.uses_permission]]
+name = "android.permission.MANAGE_EXTERNAL_STORAGE"
+
+# Reading media without the heavy permission (Android 13+); grant under
+# Settings ▸ Apps ▸ VectorCraft ▸ Permissions ▸ Photos and videos.
+[[package.metadata.android.uses_permission]]
+name = "android.permission.READ_MEDIA_IMAGES"
+
+# Legacy storage permissions, only meaningful before Android 11.
+[[package.metadata.android.uses_permission]]
+name = "android.permission.READ_EXTERNAL_STORAGE"
+max_sdk_version = 32
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.WRITE_EXTERNAL_STORAGE"
+max_sdk_version = 29
