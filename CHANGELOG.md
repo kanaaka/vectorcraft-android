@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.1.1 — 2026-10-13 (scrolling, modifiers, fonts, picker wording)
+
+| | |
+|---|---|
+| APK | `vectorcraft-0.9.0-arm64-v8a-20261013.apk` (29.6 MB) — supersedes the v0.1.0 asset, same signing key |
+| sha256 | `c7848549067eb1192e7935f45cdbf91490f3366ccfdd73c5d44ce1236f219aa6` |
+| Built from | upstream `storytold/vectorcraft` @ `2ac3ba2b866ad9d34b2252dd8024f73e34f4b2b8` + this repository at the commit that released it |
+| Package | `ai.storyteller.vectorcraft` — versionName `0.9.0`, versionCode `16779520`, minSdk 26, targetSdk 35 |
+| ABI | `arm64-v8a` only |
+
+### Changed
+- **Modifier keys work.** `src/modifiers.rs` is now part of this port: the shell tracks Ctrl/Shift/Alt
+  from the key events the platform does send (winit's Android backend never emits `ModifiersChanged`,
+  which is the only source egui reads) and re-injects the state onto every key and pointer event, once
+  per frame. Ctrl+A, Ctrl+S, Ctrl+Z and Shift-click work; this closes the gap v0.1.0 was published
+  with.
+
+### Notes
+The build was made from exactly the source in this repository (upstream pin + the patch + the port
+crate) and signed with the same local test key as v0.1.0, so it installs over it.
+
+
 ## v0.1.0 — first published port (VectorCraft 0.9.0)
 
 | | |

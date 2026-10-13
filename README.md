@@ -8,8 +8,8 @@ and egui interface, packaged as a NativeActivity APK for sideloading on arm64 de
 | Upstream project | [`storytold/vectorcraft`](https://github.com/storytold/vectorcraft) — Apache-2.0 OR MIT |
 | Pinned commit | `2ac3ba2` (upstream version `0.9.0`) |
 | Android package | `ai.storyteller.vectorcraft` |
-| Published APK | `vectorcraft-0.9.0-arm64-v8a-fonts.apk` — 29.6 MB, arm64-v8a, signed |
-| APK sha256 | `f4fa64a2506e1fe8f61c4714c9756527020020790cb15f47fa1bc3e7ed2e9438` |
+| Published APK | `vectorcraft-0.9.0-arm64-v8a-20261013.apk` — 29.6 MB, arm64-v8a, signed (release **v0.1.1**, 2026-10-13) |
+| APK sha256 | `c7848549067eb1192e7935f45cdbf91490f3366ccfdd73c5d44ce1236f219aa6` |
 | Upstream files changed | No upstream files changed — the port is `apps/vectorcraft-android/` alone, so there is nothing to apply |
 | New port crate | `apps/vectorcraft-android/` — 1088 lines of Rust plus resources |
 
@@ -73,8 +73,9 @@ A tick means the check was *run*, not inferred; the wording says how far it goes
 | Claim | How it was checked | Result |
 |---|---|---|
 | No upstream file is changed | the port is only `apps/vectorcraft-android/`; there is no patch to apply | n/a |
-| The assembled tree equals the tree the APK was built from | file-by-file SHA-256 (line endings normalised) over every patched file and every file of the port crate | ✅ 9 files identical, none differing |
+| The assembled tree equals the tree the APK was built from | file-by-file SHA-256 (line endings normalised) over every patched file and every file of the port crate | ✅ 10 files identical, none differing |
 | The port crate compiles for Android | `cargo check -p vectorcraft-android --target aarch64-linux-android`, run in a tree assembled from scratch (fresh `git fetch` of the pin, patch applied, port crate copied in) | ✅ exit 0 |
+| The port crate's own tests | `cargo test -p vectorcraft-android` in the freshly assembled tree | ✅ 13/13 pass |
 | APK is signed and is the right artifact | `apksigner verify --verbose`, `aapt2 dump badging`, sha256 | ✅ v2/v3 signatures true, `native-code: 'arm64-v8a'`, package `ai.storyteller.vectorcraft` |
 | Behaviour on real hardware | hand-testing on the porter's arm64 tablet | ⚠️ the fixes below were found and driven by that testing; each published binary is not individually re-verified here |
 

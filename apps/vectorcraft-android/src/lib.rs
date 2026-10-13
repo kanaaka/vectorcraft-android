@@ -90,6 +90,7 @@ use vectorcraft_ui_egui::picks::PickRequest;
 use vectorcraft_ui_egui::{FilePick, Services, UiState, VectorcraftApp};
 
 mod file_picker;
+mod modifiers;
 
 /// The app's private data directory, captured in `android_main` before any service
 /// closure runs:
@@ -289,7 +290,7 @@ pub fn android_main(app: winit::platform::android::activity::AndroidApp) {
                 } else {
                     log::warn!("no wgpu render state");
                 }
-                Ok(Box::new(Shell { inner: app, loss, shared }))
+                Ok(Box::new(Shell { inner: app, loss, shared, mods: modifiers::Tracked::default() }))
             }),
         )
     });
@@ -314,6 +315,9 @@ struct Shell {
     loss: GraphicsLoss,
     /// The in-app file picker's state, drawn after the app so it floats above it.
     shared: Rc<RefCell<file_picker::Shared>>,
+    /// Shift/Ctrl/Alt, tracked by hand: Android's winit reports no `ModifiersChanged` at all, so
+    /// without this every modifier shortcut is dead.
+    mods: modifiers::Tracked,
 }
 
 impl Shell {
@@ -360,6 +364,8 @@ impl eframe::App for Shell {
     }
 
     fn raw_input_hook(&mut self, _ctx: &egui::Context, raw: &mut egui::RawInput) {
+        // Before the app's own hook, so it sees the same frames it would on the desktop.
+        self.mods.apply(raw);
         self.inner.raw_input_hook(raw);
     }
 

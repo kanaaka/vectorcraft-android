@@ -131,8 +131,21 @@ The later ports in this set fixed these; this one has not been reworked since:
 - **One window.** There is no *New Window* support, so two documents cannot be put side by side.
 - **No audio.** `Services::audio_out` stays `None`: `cpal` has no Android backend here.
 
+## 2026-10-13 — Modifier keys (the gap this port was published with)
+
+This port shipped with no modifier handling: winit's Android backend never emits `ModifiersChanged`,
+and `egui-winit` reads modifiers from that event and nowhere else, so `Ctrl`/`Shift`/`Alt` were
+permanently false — `Ctrl+A`, `Ctrl+S`, `Ctrl+Z` and `Shift`-click did nothing. The sibling ports had
+already fixed it; this one had not.
+
+`src/modifiers.rs` is now in this crate and applied from the shell's `raw_input_hook`: the key events
+do arrive, so the state is tracked from them, folded into the held state, stamped onto every `Key` and
+`PointerButton` event, and re-reported once per frame with a `ModifiersChanged`. State is carried
+between frames because the press and the click usually land in different ones. The copy here is the
+simple variant (no unit tests, no return value) — the shells that synthesise wheel events use the
+version whose `apply()` hands the state back.
 ## Not verified here
 
-The APK in Releases was not re-run on a device as part of publishing this repository. Unlike its
+The APK attached to **v0.1.1** was built from exactly this tree on 2026-10-13 (upstream pin + the patch + the port crate), and the checks in the README's verification table were run against it. What that does *not* buy is a runtime claim: it was not launched on a device or emulator as part of publishing, so every behavioural statement below rests on the hand-testing the porter did on an arm64 tablet. Unlike its
 siblings, this port's fixes have not been exercised against a second round of hand-testing on the
 tablet — treat the runtime side of this one as the least confirmed in the set.
